@@ -1,0 +1,26 @@
+name: Log PR Changes
+
+on:
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize, reopened]
+
+jobs:
+  log_changes:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Log PR changes
+        run: |
+          echo "Logging changes for PR #${{ github.event.number }}"
+
+          # Obter o diff das mudanças sugeridas no PR
+          git fetch origin main
+          git diff origin/main...HEAD > pr_changes.diff
+
+          # Exibir o diff no log
+          cat pr_changes.diff
