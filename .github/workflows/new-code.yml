@@ -26,3 +26,39 @@ jobs:
 
           # Exibir o diff no log
           cat pr_changes.diff
+
+      - name: Get Access Token
+        id: get_token
+        run: |
+          echo "Fetching access token..."
+          TOKEN=$(curl --location --request POST 'https://idm.stackspot.com/zup/oidc/oauth/token' \
+            --header 'Content-Type: application/x-www-form-urlencoded' \
+            --data-urlencode 'client_id=a8d504ac-aa18-4055-8d10-e3b03ab355b3' \
+            --data-urlencode 'grant_type=client_credentials' \
+            --data-urlencode 'client_secret=X88Rzmq05g0J5Y7293eZOK4NpGDY20zGB9odAWrBnZFJ7Uxsnupov44EOVp7n25g' | jq -r '.access_token')
+          echo "::set-output name=token::"
+
+      - name: Send PR diff to API
+        id: send_diff
+        run: |
+          echo "Sending PR diff to API..."
+          RESPONSE=$(curl --location --request POST 'https://genai-code-buddy-api.stackspot.com/v1/quick-commands/create-execution/code-review-remoto-gr' \
+            --header "Authorization: Bearer ${{ steps.get_token.outputs.token }}" \
+            --header 'Content-Type: application/json' \
+            --data-raw "{\"input_data\": \"$(cat pr_changes.diff | jq -Rs .)\"}")
+          EXECUTION_ID=$(echo  | jq -r '.execution_id')
+          echo "::set-output name=execution_id::"
+
+      - name: Poll for Execution Status
+        run: |
+          echo "Polling for execution status..."
+          EXECUTION_ID=${{ steps.send_diff.outputs.execution_id }}
+          STATUS="pending"
+          while [ "" != "completed" ]; do
+            sleep 15
+            RESPONSE=$(curl --location --request GET "https://genai-code-buddy-api.stackspot.com/v1/quick-commands/callback/" \
+              --header "Authorization: Bearer ${{ steps.get_token.outputs.token }}")
+            STATUS=$(echo  | jq -r '.status')
+            echo "Current status: "
+          done
+          echo "Execution completed!"
