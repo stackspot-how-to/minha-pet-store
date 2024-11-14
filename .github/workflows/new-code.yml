@@ -18,9 +18,11 @@ jobs:
         run: |
           echo "Logging changes for PR #${{ github.event.number }}"
 
-          # Obter o diff das mudanças sugeridas no PR
-          git fetch origin main
-          git diff origin/main...HEAD > pr_changes.diff
+          # Obter a base de merge mais recente entre a branch do PR e a branch main
+          BASE=$(git merge-base origin/main HEAD)
+
+          # Obter o diff das mudanças sugeridas no PR a partir da base de merge
+          git diff ...HEAD > pr_changes.diff
 
           # Exibir o diff no log
           cat pr_changes.diff
